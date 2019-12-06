@@ -26,10 +26,16 @@ public class MainActivity extends AppCompatActivity implements
     private long startTime;
     private long elapsedTime;
 
+    class CustomNonConfigurationData
+    {
+        public long startTime;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
 
         elapsedText = findViewById(R.id.elapsed_text);
 
@@ -40,6 +46,14 @@ public class MainActivity extends AppCompatActivity implements
         resetButton.setOnClickListener(this);
         timerThread = new Thread();
         reset_timer();
+
+        CustomNonConfigurationData data = (CustomNonConfigurationData)getLastCustomNonConfigurationInstance();
+        if (data != null) {
+            if( data.startTime > 0 )
+            {
+                start_timer(data.startTime);
+            }
+        }
     }
 
     @Override
@@ -56,6 +70,18 @@ public class MainActivity extends AppCompatActivity implements
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         super.onPause();
     }
+
+    @Override
+    public Object onRetainCustomNonConfigurationInstance() {
+        CustomNonConfigurationData data = new CustomNonConfigurationData();
+        if(timerThread.isAlive()) {
+            data.startTime = startTime;
+        } else {
+            data.startTime = -1;
+        }
+        return data;
+    }
+
 
     @Override
     protected void onDestroy() {
@@ -83,16 +109,20 @@ public class MainActivity extends AppCompatActivity implements
     //--------------------
     // Timer control
     //--------------------
-    private void start_timer()
+    private void start_timer(long startTime)
     {
         startThread();
         //再開時には取得時間に経過時間分Offsetする
         //startTime = System.currentTimeMillis() - elapsedTime;
-        startTime = System.nanoTime() - elapsedTime;
+        this.startTime = startTime;
         startButton.setText(R.string.stop);
         resetButton.setEnabled(false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
+    private void start_timer() {
+        start_timer(System.nanoTime() - elapsedTime);
+    }
+
     private void stop_timer() {
         stopAndWaitThread();//UIスレッドで同期で待つ
 
@@ -106,6 +136,7 @@ public class MainActivity extends AppCompatActivity implements
         startButton.setText(R.string.start);
         resetButton.setEnabled(false);
     }
+
 
     //--------------------
     // Timer result UI
