@@ -2,6 +2,12 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 28
+       signingConfigs {
+        debug
+    }
+    if (file('../../_signingConfigs/release.gradle').exists()) {
+        apply from: '../../_signingConfigs/release.gradle', to: android
+    }
     defaultConfig {
         applicationId "info.ma34s.stopwatch"
         minSdkVersion 24
@@ -13,7 +19,24 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    applicationVariants.all { variant ->
+        if (variant.buildType.name.equals("release")) {
+            variant.outputs.all { output ->
+                if (output.outputFile != null && output.outputFile.name.endsWith('.apk')) {
+                    // Rename APK
+                    def applicationId = variant.applicationId
+                    def versionCode = defaultConfig.versionCode
+                    def versionName = defaultConfig.versionName
+                    def date = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())
+                    def newName = "${applicationId}_r${versionCode}_v${versionName}_${date}.apk"
+                    //output.outputFile = new File(output.outputFile.parent, newName)
+                    outputFileName = new File(newName)
+                }
+            }
         }
     }
 }
